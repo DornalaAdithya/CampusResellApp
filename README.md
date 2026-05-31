@@ -1,4 +1,5 @@
-# Campus Resell
+# Campus Resell App
+       ## CampXConnect
 
 A full-stack, real-time marketplace application built exclusively for university students to buy and sell second-hand products within their campus ecosystem.
 
