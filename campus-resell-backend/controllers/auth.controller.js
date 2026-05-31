@@ -119,8 +119,8 @@ export const login = async (req, res) => {
   //save the token as httpOnlyCookie
   res.cookie("token", token, {
     httpOnly: true,
-    samesite: "lax",
-    secure: false,
+    sameSite: "none",
+    secure: true,
   });
 
   const userObj = user.toObject();
@@ -143,8 +143,8 @@ export const logout = async (req, res) => {
   res.clearCookie("token", {
     // Must match original  settings
     httpOnly: true,
-    sameSite: "lax",
-    secure: false,
+    sameSite: "none",
+    secure: true,
   });
   res.status(200).json({ message: "Logged out Successfully" });
 };
@@ -156,16 +156,14 @@ export const updateProfilePhoto = async (req, res, next) => {
     }
     const userId = req.user.userId;
     const cloudinaryResult = await uploadToCloudinary(req.file.buffer);
-    
-    const updatedUser = await UserModel.findByIdAndUpdate(
-      userId,
-      { profileUrl: cloudinaryResult.secure_url },
-      { new: true }
-    ).select("firstName lastName email profileUrl");
+
+    const updatedUser = await UserModel.findByIdAndUpdate(userId, { profileUrl: cloudinaryResult.secure_url }, { new: true }).select(
+      "firstName lastName email profileUrl",
+    );
 
     res.status(200).json({
       message: "Profile photo updated",
-      payload: updatedUser
+      payload: updatedUser,
     });
   } catch (error) {
     next(error);
