@@ -1,0 +1,35 @@
+<svg width="450" height="110" viewBox="0 0 450 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="campxGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Brand Name -->
+  <text
+    x="225"
+    y="50"
+    text-anchor="middle"
+    font-family="Poppins, Inter, Arial, sans-serif"
+    font-size="42"
+    font-weight="800"
+    fill="#111827"
+  >
+    Camp<tspan fill="url(#campxGradient)">X</tspan>Connect
+  </text>
+
+  <!-- Tagline -->
+  <text
+    x="225"
+    y="82"
+    text-anchor="middle"
+    font-family="Poppins, Inter, Arial, sans-serif"
+    font-size="14"
+    font-weight="600"
+    fill="#6B7280"
+    letter-spacing="4"
+  >
+    BUY • SELL
+  </text>
+</svg>
