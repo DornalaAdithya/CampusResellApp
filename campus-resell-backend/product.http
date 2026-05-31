@@ -1,0 +1,10 @@
+###Add product
+POST http://localhost:5000/products
+Content-Type: application/json
+
+{
+    "title":"Maths M-1 Book",
+    "price":200,
+    "category":"BOOKS",
+    "description":"Maths book for 1st year student. good condition."   
+}
