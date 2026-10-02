@@ -8,6 +8,7 @@ import authRoute from "./routes/auth.route.js";
 import userRoute from "./routes/user.route.js";
 import productRoute from "./routes/product.route.js";
 import chatRoute from "./routes/chatRoutes.js";
+import productReportRoute from "./routes/productReport.route.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 
 //.env - used to access the environment variable's
@@ -30,6 +31,7 @@ connectDB();
 app.use("/auth", authRoute);
 app.use("/users", userRoute);
 app.use("/products", productRoute);
+app.use("/product-reports", productReportRoute);
 app.use("/api/chat", chatRoute);
 
 //start the http server
