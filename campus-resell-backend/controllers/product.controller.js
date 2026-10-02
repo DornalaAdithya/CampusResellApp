@@ -1,4 +1,5 @@
 import { ProductModel } from "../models/ProductModel.js";
+import { UserViewHistoryModel } from "../models/UserViewHistoryModel.js";
 import cloudinary from "../config/cloudinary.js";
 import { uploadToCloudinary } from "../config/cloudinaryUpload.js";
 
@@ -87,11 +88,40 @@ export const addProductToSell = async (req, res, next) => {
 
 export const getProductByID = async (req, res) => {
   const productId = req.params.pid;
+
   const product = await ProductModel.findById(productId).populate("owner", "firstName lastName profileUrl email");
+
   if (!product) {
-    return res.status(404).json({ message: "Product Not Found", payload: {} });
+    return res.status(404).json({
+      message: "Product Not Found",
+      payload: {},
+    });
   }
-  return res.status(200).json({ message: "product found", payload: product });
+
+  // Record product view only for logged-in users
+  if (req.user?.userId) {
+    await UserViewHistoryModel.findOneAndUpdate(
+      {
+        user: req.user.userId,
+        product: productId,
+      },
+      {
+        $set: {
+          viewedAt: new Date(),
+        },
+      },
+      {
+        upsert: true,
+        new: true,
+        setDefaultsOnInsert: true,
+      },
+    );
+  }
+
+  return res.status(200).json({
+    message: "product found",
+    payload: product,
+  });
 };
 
 export const updateProductStatus = async (req, res) => {
@@ -104,7 +134,7 @@ export const updateProductStatus = async (req, res) => {
   }
 
   const product = await ProductModel.findById(productId);
-  
+
   if (!product) {
     return res.status(404).json({ message: "Product Not Found" });
   }

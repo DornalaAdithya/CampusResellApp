@@ -62,8 +62,14 @@ function Register() {
     }
     try {
       await registerUser(formData);
-      toast.success("Account Created");
-      navigate("/login");
+
+      toast.success("OTP sent to your email");
+
+      navigate("/verify-email", {
+        state: {
+          email: formData.get("email"),
+        },
+      });
     } catch (err) {
       toast.error(err.response?.data?.error || err.response?.data?.message || "Registration Failed");
     }

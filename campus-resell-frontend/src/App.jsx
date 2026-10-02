@@ -16,6 +16,7 @@ import useChatStore from "./stores/chatStore";
 import Products from "./pages/Products";
 import Chats from "./pages/Chats";
 import ChatRoom from "./pages/ChatRoom";
+import VerifyEmail from "./pages/VerifyEmail";
 
 const routerObj = createBrowserRouter([
   {
@@ -33,6 +34,10 @@ const routerObj = createBrowserRouter([
       {
         path: "register",
         element: <Register />,
+      },
+      {
+        path: "verify-email",
+        element: <VerifyEmail />,
       },
       {
         path: "products",
@@ -89,7 +94,7 @@ function App() {
   const getProfile = userAuthStore((state) => state.getProfile);
 
   const isAuthenticated = userAuthStore((state) => state.isAuthenticated);
-  
+
   const { setupSocket, disconnectSocket } = useChatStore();
 
   useEffect(() => {

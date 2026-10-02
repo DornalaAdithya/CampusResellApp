@@ -4,20 +4,20 @@ import { compare, hash } from "bcrypt";
 import jwt from "jsonwebtoken";
 import { uploadToCloudinary } from "../config/cloudinaryUpload.js";
 import cloudinary from "../config/cloudinary.js";
+import transporter from "../config/email.js";
 
 config();
 
 export const register = async (req, res, next) => {
   let cloudinaryResult;
+
   try {
-    //  Step 1: upload image to cloudinary from memoryStorage (if exists)
     if (req.file) {
       cloudinaryResult = await uploadToCloudinary(req.file.buffer);
     }
 
     const { firstName, lastName, email, password } = req.body;
 
-    // validate email
     if (!email.toLowerCase().endsWith("@anurag.edu.in")) {
       throw {
         status: 400,
@@ -25,38 +25,50 @@ export const register = async (req, res, next) => {
       };
     }
 
-    // validate password
-    //   const passwordRegex = /^(?=.*[A-Z])(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{7,}$/;
+    const existingUser = await UserModel.findOne({ email });
 
-    //   if (!passwordRegex.test(password)) {
-    //     throw {
-    //       status: 400,
-    //       message: "Password must be at least 7 characters with one capital letter and one special character",
-    //     };
-    //   }
+    if (existingUser) {
+      throw {
+        status: 409,
+        message: "Email already registered",
+      };
+    }
 
-    // Step 2: call existing register()
-    //create user document
-    const userDocument = new UserModel({ firstName, lastName, email, password, profileUrl: cloudinaryResult?.secure_url });
-    //validate
-    await userDocument.validate();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    //hash the password
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000);
+
     const hashedPassword = await hash(password, 10);
-    userDocument.password = hashedPassword;
-    const created = await userDocument.save();
-    //convert document to object to remove password (using .toObject)
-    const newUserObj = created.toObject();
-    delete newUserObj.password;
-    //send response
-    res.status(201).json({ message: "User Created", payload: newUserObj });
+
+    const userDocument = new UserModel({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      profileUrl: cloudinaryResult?.secure_url,
+      isEmailVerified: false,
+      emailVerificationOTP: otp,
+      emailVerificationExpires: otpExpires,
+    });
+
+    await userDocument.save();
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "CampXConnect - Email Verification OTP",
+      text: `Your CampXConnect verification OTP is ${otp}. It is valid for 10 minutes.`,
+    });
+
+    res.status(201).json({
+      message: "Registration successful. OTP sent to your email.",
+    });
   } catch (err) {
-    // Step 3: rollback
     if (cloudinaryResult?.public_id) {
       await cloudinary.uploader.destroy(cloudinaryResult.public_id);
     }
 
-    next(err); // send to your error middleware
+    next(err);
   }
 };
 
@@ -90,6 +102,14 @@ export const login = async (req, res) => {
     throw {
       status: 403,
       message: "User Is Blocked By Admin.",
+    };
+  }
+
+  //check email verification
+  if (!user.isEmailVerified) {
+    throw {
+      status: 403,
+      message: "Please verify your email before logging in.",
     };
   }
 
@@ -196,5 +216,60 @@ export const changePassword = async (req, res, next) => {
     res.status(200).json({ message: "Password updated successfully" });
   } catch (error) {
     next(error);
+  }
+};
+
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      throw {
+        status: 400,
+        message: "Email and OTP are required",
+      };
+    }
+
+    const user = await UserModel.findOne({ email }).select("+emailVerificationOTP +emailVerificationExpires");
+
+    if (!user) {
+      throw {
+        status: 404,
+        message: "User not found",
+      };
+    }
+
+    if (user.isEmailVerified) {
+      throw {
+        status: 400,
+        message: "Email is already verified",
+      };
+    }
+
+    if (!user.emailVerificationOTP || !user.emailVerificationExpires || user.emailVerificationExpires < new Date()) {
+      throw {
+        status: 400,
+        message: "OTP expired. Please request a new OTP.",
+      };
+    }
+
+    if (user.emailVerificationOTP !== otp) {
+      throw {
+        status: 400,
+        message: "Invalid OTP",
+      };
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationOTP = null;
+    user.emailVerificationExpires = null;
+
+    await user.save();
+
+    res.status(200).json({
+      message: "Email verified successfully",
+    });
+  } catch (err) {
+    next(err);
   }
 };
