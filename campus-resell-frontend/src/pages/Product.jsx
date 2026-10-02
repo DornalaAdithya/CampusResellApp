@@ -19,6 +19,8 @@ function Product() {
   const [reportMessage, setReportMessage] = useState("");
   const [submittingReport, setSubmittingReport] = useState(false);
   const [reportSummary, setReportSummary] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(true);
 
   const user = userAuthStore((state) => state.user);
 
@@ -83,6 +85,25 @@ function Product() {
     };
 
     fetchReportSummary();
+  }, [pid]);
+
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      try {
+        setRecommendationsLoading(true);
+
+        const response = await api.get(`/recommendations/${pid}`);
+
+        setRecommendations(response.data.payload || []);
+      } catch (error) {
+        console.error("Error fetching recommendations:", error);
+        setRecommendations([]);
+      } finally {
+        setRecommendationsLoading(false);
+      }
+    };
+
+    fetchRecommendations();
   }, [pid]);
 
   if (loading) {
@@ -288,6 +309,44 @@ function Product() {
           </div>
         </div>
       </div>
+      {/* RECOMMENDATIONS */}
+      {!recommendationsLoading && recommendations.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8 mt-16">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-[#111111] font-['Sora']">Recommended for You</h2>
+
+            <p className="text-sm text-[#6e6e73] mt-1">Products similar to this listing</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            {recommendations.map((item) => (
+              <div
+                key={item._id}
+                onClick={() => navigate(`/products/${item._id}`)}
+                className="bg-white rounded-2xl border border-gray-100 overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200"
+              >
+                <div className="aspect-square bg-gray-100 overflow-hidden">
+                  <img
+                    src={item.productImages?.[0] || "https://placehold.co/600x600?text=No+Image"}
+                    alt={item.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+
+                <div className="p-4">
+                  <span className="text-xs font-bold text-[#0066cc] uppercase">{item.category}</span>
+
+                  <h3 className="font-bold text-[#111111] mt-1 line-clamp-2">{item.title}</h3>
+
+                  <p className="text-lg font-bold text-[#111111] mt-3">₹{item.price}</p>
+
+                  <p className="text-xs text-[#6e6e73] mt-1">{item.condition?.replace("_", " ")}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       {/* REPORT PRODUCT MODAL */}
       {showReportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
