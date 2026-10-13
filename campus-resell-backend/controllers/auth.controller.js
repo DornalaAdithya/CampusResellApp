@@ -133,12 +133,23 @@ export const login = async (req, res) => {
 
   await user.save();
 
-  // Send OTP to registered email
+  // Send login alert to account owner
   await transporter.sendMail({
     from: process.env.EMAIL_USER,
     to: user.email,
-    subject: "Campus Resale Marketplace - Login Verification",
-    text: `Your login OTP is ${otp}. It is valid for 10 minutes. If you did not try to log in, do not share this code and change your password.`,
+    subject: "Security Alert: Login Attempt",
+    text: `Hello,
+
+A login attempt was made on your Campus Resale Marketplace account.
+
+If this was you, continue by entering the login OTP sent to your email.
+
+If this was NOT you:
+- Do not share your OTP with anyone.
+- Change your password immediately.
+
+Regards,
+Campus Resale Marketplace Security Team`,
   });
 
   // Do not create JWT until OTP is verified
