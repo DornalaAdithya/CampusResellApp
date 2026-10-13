@@ -17,6 +17,7 @@ import Products from "./pages/Products";
 import Chats from "./pages/Chats";
 import ChatRoom from "./pages/ChatRoom";
 import VerifyEmail from "./pages/VerifyEmail";
+import VerifyLogin from "./pages/VerifyLogin";
 
 const routerObj = createBrowserRouter([
   {
@@ -30,6 +31,10 @@ const routerObj = createBrowserRouter([
       {
         path: "login",
         element: <Login />,
+      },
+      {
+        path: "verify-login",
+        element: <VerifyLogin />,
       },
       {
         path: "register",

@@ -52,6 +52,16 @@ const userSchema = new Schema(
       default: null,
       select: false,
     },
+    loginOTP: {
+      type: String,
+      default: null,
+      select: false,
+    },
+    loginOTPExpires: {
+      type: Date,
+      default: null,
+      select: false,
+    },
   },
   { timestamps: true, strict: "throw", versionKey: false },
 );

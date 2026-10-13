@@ -81,6 +81,7 @@ export const login = async (req, res) => {
       message: "Email required",
     };
   }
+
   if (!password) {
     throw {
       status: 400,
@@ -88,8 +89,9 @@ export const login = async (req, res) => {
     };
   }
 
-  //find user with email
+  // Find user with email
   const user = await UserModel.findOne({ email }).select("+password");
+
   if (!user) {
     throw {
       status: 404,
@@ -97,7 +99,7 @@ export const login = async (req, res) => {
     };
   }
 
-  //if user valid ,but blocked by admin
+  // Check if user is blocked by admin
   if (!user.isActive) {
     throw {
       status: 403,
@@ -105,7 +107,7 @@ export const login = async (req, res) => {
     };
   }
 
-  //check email verification
+  // Check email verification
   if (!user.isEmailVerified) {
     throw {
       status: 403,
@@ -113,8 +115,9 @@ export const login = async (req, res) => {
     };
   }
 
-  //compare password
+  // Compare password
   const match = await compare(password, user.password);
+
   if (!match) {
     throw {
       status: 401,
@@ -122,7 +125,76 @@ export const login = async (req, res) => {
     };
   }
 
-  //generate jwt token
+  // Generate login OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  user.loginOTP = otp;
+  user.loginOTPExpires = new Date(Date.now() + 10 * 60 * 1000);
+
+  await user.save();
+
+  // Send login alert to account owner
+  await transporter.sendMail({
+    from: process.env.EMAIL_USER,
+    to: user.email,
+    subject: "Security Alert: Login Attempt",
+    text: `Hello,
+
+A login attempt was made on your Campus Resale Marketplace account.
+
+If this was you, continue by entering the login OTP sent to your email.
+
+If this was NOT you:
+- Do not share your OTP with anyone.
+- Change your password immediately.
+
+Regards,
+Campus Resale Marketplace Security Team`,
+  });
+
+  // Do not create JWT until OTP is verified
+  return res.status(200).json({
+    message: "Login OTP sent to your registered email.",
+    requiresOtp: true,
+    email: user.email,
+  });
+};
+
+export const verifyLoginOTP = async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({
+      message: "Email and OTP are required",
+    });
+  }
+
+  const user = await UserModel.findOne({ email }).select("+loginOTP +loginOTPExpires");
+
+  if (!user || !user.isActive || !user.isEmailVerified) {
+    return res.status(400).json({
+      message: "Invalid login verification request",
+    });
+  }
+
+  if (!user.loginOTP || !user.loginOTPExpires || user.loginOTPExpires < new Date()) {
+    return res.status(400).json({
+      message: "OTP expired. Please log in again.",
+    });
+  }
+
+  if (user.loginOTP !== otp) {
+    return res.status(400).json({
+      message: "Invalid OTP",
+    });
+  }
+
+  // Clear OTP after successful verification
+  user.loginOTP = null;
+  user.loginOTPExpires = null;
+  await user.save();
+
+  // Create JWT only after OTP verification
   const token = jwt.sign(
     {
       userId: user._id,
@@ -134,9 +206,6 @@ export const login = async (req, res) => {
     { expiresIn: "1h" },
   );
 
-  console.log("token created : ", token);
-
-  //save the token as httpOnlyCookie
   res.cookie("token", token, {
     httpOnly: true,
     sameSite: "none",
@@ -145,8 +214,13 @@ export const login = async (req, res) => {
 
   const userObj = user.toObject();
   delete userObj.password;
+  delete userObj.loginOTP;
+  delete userObj.loginOTPExpires;
 
-  res.status(200).json({ message: "Login Successful", payload: userObj });
+  return res.status(200).json({
+    message: "Login successful",
+    payload: userObj,
+  });
 };
 
 export const getProfile = async (req, res) => {

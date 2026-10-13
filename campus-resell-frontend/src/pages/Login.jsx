@@ -16,11 +16,15 @@ function Login() {
   const loading = userAuthStore((state) => state.loading);
   const submitForm = async (data) => {
     try {
-      await login(data);
-      toast.success("Welcome Back");
-      navigate("/");
+      const res = await login(data);
+
+      toast.success("OTP sent to your registered email");
+
+      navigate("/verify-login", {
+        state: { email: res.email },
+      });
     } catch (err) {
-      toast.error(err.response?.data?.error || err.response?.data?.message || "Login Failed");
+      toast.error(err.response?.data?.message || "Login Failed");
     }
   };
   return (
