@@ -14,18 +14,32 @@ const userAuthStore = create((set) => ({
   login: async (data) => {
     try {
       set({ loading: true });
+
       const res = await api.post("/auth/login", data);
+
+      // Login is not complete until OTP verification
+      return res.data;
+    } catch (err) {
+      throw err;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  verifyLoginOTP: async (data) => {
+    try {
+      set({ loading: true });
+
+      const res = await api.post("/auth/verify-login-otp", data);
+
       set({
         user: res.data.payload,
         isAuthenticated: true,
         authChecked: true,
       });
+
+      return res.data;
     } catch (err) {
-      set({
-        user: null,
-        isAuthenticated: false,
-        authChecked: true,
-      });
       throw err;
     } finally {
       set({ loading: false });
